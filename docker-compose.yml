@@ -1,9 +1,51 @@
-version: '3.8'
+# GitHub Pages에 정적 컨텐츠 배포
+name: Deploy static content to Pages
 
-services:
-  web:
-    image: nginx
-    ports:
-      - "2222:80"
-    volumes:
-      - ./:/usr/share/nginx/html
+on:
+  # 기본 브랜치(main)에 푸시가 발생했을 때 실행
+  push:
+    branches: ["main"]
+
+  # Actions 탭에서 수동으로 실행할 수 있도록 설정
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      # 레포지토리를 체크아웃
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Node.js 설정 (선택 사항, 필요 시 추가)
+      # - name: Setup Node.js
+      #   uses: actions/setup-node@v3
+      #   with:
+      #     node-version: '16'
+
+      # GitHub Pages 설정
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      # 프로젝트 파일 업로드
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './' # 저장소의 루트 디렉토리를 업로드
+
+      # GitHub Pages에 배포
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
